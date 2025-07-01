@@ -1,0 +1,15 @@
+name: "Deploy to prod"
+
+on:
+  workflow_dispatch:
+
+
+jobs:
+
+  prod-pr:
+    runs-on: ubuntu-latest
+    environment: prod
+    needs: ["prod"]
+    steps:
+      - name: deploy
+        run: sleep 5
