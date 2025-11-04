@@ -1,0 +1,46 @@
+name: Increment saas Tag
+
+on:
+  workflow_dispatch:  # run manually
+  workflow_call:
+
+jobs:
+  bump-saas-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required to push tags
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # ensure all tags are fetched
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Find latest saas tag
+        id: find_tag
+        run: |
+          # Get all tags with saas- prefix, sort by numeric part, and take the last one
+          latest_tag=$(git tag | grep '^saas-' | sort -t'-' -k2 -n | tail -n1)
+          if [ -z "$latest_tag" ]; then
+            echo "No saas- tags found. Starting from saas-1."
+            latest_tag="saas-0"
+          fi
+          echo "Latest tag: $latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+      - name: Increment tag number
+        id: increment_tag
+        run: |
+          latest="${{ steps.find_tag.outputs.latest_tag }}"
+          num=$(echo "$latest" | sed 's/saas-//')
+          new_num=$((num + 1))
+          new_tag="saas-$new_num"
+          echo "New tag: $new_tag"
+          echo "new_tag=$new_tag" >> $GITHUB_OUTPUT
+      - name: Create and push new tag
+        run: |
+          new_tag=${{ steps.increment_tag.outputs.new_tag }}
+          git tag "$new_tag"
+          git push origin "$new_tag"
