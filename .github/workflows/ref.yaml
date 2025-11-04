@@ -1,0 +1,33 @@
+name: Rollback prod deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        description: the tag to be rolled back to
+
+
+
+jobs:
+  validate-ref:
+    runs-on: ubuntu-latest
+    outputs:
+      commit_sha: ${{ steps.get-commit.outputs.COMMIT_SHA }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+      - id: get-commit
+        run: |
+          if [[ "${{ inputs.tag }}" =~ ^saas ]]; then
+            echo "The tag is correct"
+          else
+            echo "The tag isnt' correct"
+            exit 1
+          fi
+
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "COMMIT_SHA=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
